@@ -20,6 +20,8 @@ For LGPL information:   http://www.gnu.org/copyleft/lesser.txt
 
 /*
 Adapted to the gemini protocol by @percidae
+Adapted to a Palantype machine by @percidae
+Converts a hardwarematrix of 5x6 to the Palantype Gemini Protocol
  */
 
 
@@ -31,9 +33,9 @@ Adapted to the gemini protocol by @percidae
 #define STICKY_DELAY 500
 
 // Keyboard matrix columns
-#define KB_COLUMNS 7   // 7 for gemini 6 for tx bolt
+#define KB_COLUMNS 6   // 7 for gemini, 6 for tx bolt, 6 for Palantype with gemini protocol
 // Keyboard matrix rows
-#define KB_ROWS 6      // 6 for gemini 4 for tx bolt
+#define KB_ROWS 5      // 6 for gemini, 4 for tx bolt, 5 for Palantype with gemini protocol
 
 // Useful way to refer to the Stroke objects
 typedef uint8_t* Stroke;
@@ -76,13 +78,71 @@ typedef struct {
                    "#7", "#8", "#9", "#A", "#B", "#C", "-Z")           19
  */
 
+/*
+ Palantype specific things 
+ */
+#define BIT8 B10000000
+#define BIT7 B01000000
+#define BIT6 B00100000
+#define BIT5 B00010000
+#define BIT4 B00001000
+#define BIT3 B00000100
+#define BIT2 B00000010
+#define BIT1 B00000001
 
+// Convert the read strokes to the Palantype Protocol
+typedef struct {
+   uint8_t read_byte;
+   uint8_t read_bit;
+   uint8_t gemini_byte;
+   uint8_t gemini_bit;  
+} Palantype_Conversion_Matrix;
+
+Palantype_Conversion_Matrix conversion[33] = {
+  {3, BIT6, 1, BIT7}, // C-
+  {3, BIT5, 1, BIT6}, // S-
+  {0, BIT6, 0, BIT4}, // P-
+  {0, BIT5, 1, BIT5}, // T-
+  {0, BIT4, 1, BIT4}, // H-
+  {1, BIT6, 2, BIT6}, // M-
+  {1, BIT5, 1, BIT3}, // F-
+  {1, BIT4, 1, BIT2}, // R-
+  {2, BIT6, 0, BIT2}, // N-
+  {2, BIT5, 1, BIT1}, // L-
+  {2, BIT4, 2, BIT7}, // Y-
+  {4, BIT6, 2, BIT5}, // O-
+  {4, BIT4, 2, BIT3}, // E-
+  {4, BIT5, 2, BIT4}, // I- (left)
+  {3, BIT4, 0, BIT7}, // +-
+  {3, BIT4, 0, BIT3}, // +-
+  {3, BIT4, 2, BIT1}, // +-
+  {2, BIT3, 3, BIT1}, // -N
+  {2, BIT2, 3, BIT2}, // -L
+  {2, BIT1, 5, BIT6}, // -C
+  {1, BIT3, 3, BIT3}, // -M
+  {1, BIT2, 4, BIT7}, // -F
+  {1, BIT1, 5, BIT5}, // -R
+  {0, BIT3, 4, BIT4}, // -P
+  {0, BIT2, 4, BIT5}, // -T
+  {0, BIT1, 5, BIT4}, // -+
+  {3, BIT3, 4, BIT3}, // -H
+  {3, BIT2, 5, BIT3}, // -S
+  {4, BIT2, 2, BIT4}, // -I (right)
+  //{4, BIT2, 3, BIT5}, // -I (right) as Asterisk!
+  {4, BIT3, 3, BIT4}, // -A
+  {4, BIT1, 5, BIT2}, // -U
+  {3, BIT1, 4, BIT6}, // -^
+  {3, BIT1, 4, BIT1}  // -^
+  };
 
 // Using Arduino pin numbers
-uint8_t inpin[KB_COLUMNS] = {5,7,8,9,10,11,6}; // 7 columns for gemini protocol
-uint8_t pin[KB_ROWS] = {14,15,16,17,18,19}; // 6 rows for gemini protocol
+uint8_t inpin[KB_COLUMNS] = {4, 3, 2, 16, 14, 15}; // 5 columns for Palantype with gemini protocol
+uint8_t pin[KB_ROWS] = {5, 6, 7, 8, 9}; // 6 rows for Palantype with gemini protocol
 uint8_t LED = 13;
 uint64_t last_key_up = 0;
+
+// Special to convert the read stroke to a gemini stroke
+uint8_t gemini_stroke[6] = {B10000000, 0, 0, 0, 0, 0};
 
 State state;
 
@@ -111,6 +171,15 @@ void default_settings() {
   state.repeat_start_delay = REPEAT_START_DELAY;
   state.repeat_delay = REPEAT_DELAY;
   state.sticky_delay = STICKY_DELAY;
+}
+
+void printBits(byte myByte){
+ for(byte mask = 0x80; mask; mask >>= 1){
+   if(mask  & myByte)
+       Serial.print('1');
+   else
+       Serial.print('0');
+ }
 }
 
 /*** Stroke Manipulation Functions */
@@ -388,21 +457,34 @@ void m_sticky_on_key_change() {
   }
 }
 
-/* TXBOLT Serial Functions */
+/* Serial Functions */
 // Send the current stroke stored in
 // b array
 void send_stroke(uint8_t* b) {
-   // If it is the first byte, set the msb to "1", always send all bytes even if empty
-   for (int i = 0 ; i < KB_ROWS; i++){
-     if (i == 0)
-       send_byte(b[0] | 0x80);
-     else
-       send_byte(b[i]);
+   // Convert stroke to Palantype Gemini Protocol
+   for (int i = 0; i < 33; i++){
+    if((b[conversion[i].read_byte] & conversion[i].read_bit)== conversion[i].read_bit){
+      gemini_stroke[conversion[i].gemini_byte] = gemini_stroke[conversion[i].gemini_byte] | conversion[i].gemini_bit;
+      }
+    }
+
+  // Dirty Macro trick if the output would be an "I" but both I's were pressed to send an Asterisk instead
+  
+   
+  
+   // Always send all bytes even if empty
+   for (int i = 0 ; i < 6; i++){
+     send_byte(gemini_stroke[i]);
+     // Delete after sending
+     gemini_stroke[i] = 0x00;
    }
+   // Set the first Bit in the first Gemini Byte to 1 for the next stroke
+   gemini_stroke[0] |= B10000000;
 
    state.last_stroke_send = millis();
    state.stroke_sent = true;
 }
+
 
 /* Main Loop */
 void loop() {
