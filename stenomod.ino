@@ -22,6 +22,9 @@ For LGPL information:   http://www.gnu.org/copyleft/lesser.txt
 Adapted to the gemini protocol by @percidae
 Adapted to a Palantype machine by @percidae
 Converts a hardwarematrix of 5x6 to the Palantype Gemini Protocol
+
+Adapted to a Palantype machine with two additional keys by @percidae
+
  */
 
 
@@ -33,9 +36,9 @@ Converts a hardwarematrix of 5x6 to the Palantype Gemini Protocol
 #define STICKY_DELAY 500
 
 // Keyboard matrix columns
-#define KB_COLUMNS 6   // 7 for gemini, 6 for tx bolt, 6 for Palantype with gemini protocol
+#define KB_COLUMNS 5   // 7 for gemini, 6 for tx bolt, 6 for Palantype with gemini protocol, 5 for Palantype De with gemini protocol
 // Keyboard matrix rows
-#define KB_ROWS 5      // 6 for gemini, 4 for tx bolt, 5 for Palantype with gemini protocol
+#define KB_ROWS 8      // 6 for gemini, 4 for tx bolt, 5 for Palantype with gemini protocol, 8 for Palantype De with gemini protocol
 
 // Useful way to refer to the Stroke objects
 typedef uint8_t* Stroke;
@@ -67,7 +70,7 @@ typedef struct {
 } State;
 
 /*
- Gemini Keychart
+ Gemini Keychart (not for Palantype or Palantype De)
   
                      5      7     8     9    10     6    11   (connected before the diodes)
  STENO_KEY_CHART = ("Fn", "#1", "#2", "#3", "#4", "#5", "#6",          14 (connected behind the diodes)
@@ -98,46 +101,52 @@ typedef struct {
    uint8_t gemini_bit;  
 } Palantype_Conversion_Matrix;
 
-Palantype_Conversion_Matrix conversion[33] = {
-  {3, BIT6, 1, BIT7}, // C-
-  {3, BIT5, 1, BIT6}, // S-
-  {0, BIT6, 0, BIT4}, // P-
-  {0, BIT5, 1, BIT5}, // T-
-  {0, BIT4, 1, BIT4}, // H-
-  {1, BIT6, 2, BIT6}, // M-
-  {1, BIT5, 1, BIT3}, // F-
-  {1, BIT4, 1, BIT2}, // R-
-  {2, BIT6, 0, BIT2}, // N-
-  {2, BIT5, 1, BIT1}, // L-
-  {2, BIT4, 2, BIT7}, // Y-
-  {4, BIT6, 2, BIT5}, // O-
-  {4, BIT4, 2, BIT3}, // E-
-  {4, BIT5, 2, BIT4}, // I- (left)
-  {3, BIT4, 0, BIT7}, // +-
-  {3, BIT4, 0, BIT3}, // +-
-  {3, BIT4, 2, BIT1}, // +-
-  {2, BIT3, 3, BIT1}, // -N
-  {2, BIT2, 3, BIT2}, // -L
-  {2, BIT1, 5, BIT6}, // -C
-  {1, BIT3, 3, BIT3}, // -M
-  {1, BIT2, 4, BIT7}, // -F
-  {1, BIT1, 5, BIT5}, // -R
-  {0, BIT3, 4, BIT4}, // -P
-  {0, BIT2, 4, BIT5}, // -T
-  {0, BIT1, 5, BIT4}, // -+
-  {3, BIT3, 4, BIT3}, // -H
-  {3, BIT2, 5, BIT3}, // -S
-  {4, BIT2, 2, BIT4}, // -I (right)
-  //{4, BIT2, 3, BIT5}, // -I (right) as Asterisk!
-  {4, BIT3, 3, BIT4}, // -A
-  {4, BIT1, 5, BIT2}, // -U
-  {3, BIT1, 4, BIT6}, // -^
-  {3, BIT1, 4, BIT1}  // -^
+/* vmtl immer: 0BIT6, 0BIT7, 1BIT7, 1BIT6 2BIT6 2BIT7 3BIT7 3BIT6 4BIT6 4BIT7 5BIT7 5BIT6 6BIT6 6BIT7 7BIT7 7BIT6*/
+/* ?: 0 BIT8 1BIT8 2BIT1 2BIT3 2BIT4 2BIT5 2BIT8 3BIT8 3BIT5 3BIT4 3BIT3 3BIT1 4BIT8 5BIT8 6BIT8 7BIT8 */
+/* linke special Taste: 2BIT2 output 3BIT6, */
+/* rechte special Taste: 3BIT output 3BIT5 */
+Palantype_Conversion_Matrix conversion[35] = {
+   {0, BIT2, 1, BIT7}, // C-
+   {1, BIT2, 1, BIT6}, // S- 
+   {0, BIT5, 0, BIT4}, // P-
+   {1, BIT5, 1, BIT5}, // T-
+   {6, BIT5, 1, BIT4}, // H-
+   {0, BIT4, 2, BIT6}, // M-
+   {1, BIT4, 1, BIT3}, // F-
+   {6, BIT4, 1, BIT2}, // R-
+   {0, BIT3, 0, BIT2}, // N-
+   {1, BIT3, 1, BIT1}, // L-
+   {6, BIT3, 2, BIT7}, // Y-
+   {0, BIT1, 2, BIT5}, // O-
+   {6, BIT1, 2, BIT3}, // E-
+   {1, BIT1, 2, BIT4}, // I- (left)
+   {6, BIT2, 0, BIT7}, // +-
+   {6, BIT2, 0, BIT3}, // +-
+   {6, BIT2, 2, BIT1}, // +-
+   {7, BIT3, 3, BIT1}, // -N
+   {4, BIT3, 3, BIT2}, // -L
+   {5, BIT3, 5, BIT6}, // -C
+   {7, BIT4, 3, BIT3}, // -M
+   {4, BIT4, 4, BIT7}, // -F
+   {5, BIT4, 5, BIT5}, // -R
+   {7, BIT5, 4, BIT4}, // -P
+   {4, BIT5, 4, BIT5}, // -T
+   {5, BIT5, 5, BIT4}, // -+
+   {7, BIT2, 4, BIT3}, // -H
+   {4, BIT2, 5, BIT3}, // -S
+  // {4, BIT1, 2, BIT4}, // -I (right)
+   {4, BIT1, 2, BIT4}, // -I (right) as Asterisk!
+   {7, BIT1, 3, BIT4}, // -A
+   {5, BIT1, 5, BIT2}, // -U
+   {5, BIT2, 4, BIT6}, // -^
+   {5, BIT2, 4, BIT1}, // -^
+   {2, BIT2, 3, BIT5}, // *3 for nospace, left extra key 3BIT6
+   {3, BIT2, 3, BIT6}  // *4 for capitalization, right extra key 3BIT5
   };
 
 // Using Arduino pin numbers
-uint8_t inpin[KB_COLUMNS] = {4, 3, 2, 16, 14, 15}; // 5 columns for Palantype with gemini protocol
-uint8_t pin[KB_ROWS] = {5, 6, 7, 8, 9}; // 6 rows for Palantype with gemini protocol
+uint8_t inpin[KB_COLUMNS] = {5, 6, 7, 8, 9}; // 6 columns for Palantype with gemini protocol, 5 for Palantype De
+uint8_t pin[KB_ROWS] = {4, 3, 2, 16, 14, 15, 21, 10}; // 6 rows for Palantype with gemini protocol, 8 for Palantype De
 uint8_t LED = 13;
 uint64_t last_key_up = 0;
 
@@ -152,7 +161,7 @@ void reset_state(bool set_prev);
 // Setup ports and serial
 // All unused ports get weak pullup
 void setup() {
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 22; i++) {
     pinMode (i, INPUT_PULLUP);
   }
   for (int i = 0; i < KB_ROWS; i++) {
@@ -461,16 +470,37 @@ void m_sticky_on_key_change() {
 // Send the current stroke stored in
 // b array
 void send_stroke(uint8_t* b) {
+   /*Serial.print(b[0]);
+   Serial.print(b[1]);
+   Serial.print(b[2]);
+   Serial.print(b[3]);
+   Serial.print(b[4]);
+   Serial.print(b[5]);
+   Serial.print(b[6]);
+   Serial.print(b[7]);
+   Serial.println();*/
    // Convert stroke to Palantype Gemini Protocol
-   for (int i = 0; i < 33; i++){
+   for (int i = 0; i < 35; i++){
     if((b[conversion[i].read_byte] & conversion[i].read_bit)== conversion[i].read_bit){
       gemini_stroke[conversion[i].gemini_byte] = gemini_stroke[conversion[i].gemini_byte] | conversion[i].gemini_bit;
       }
     }
-
-  // Dirty Macro trick if the output would be an "I" but both I's were pressed to send an Asterisk instead
-  
-   
+   /*
+   // Dirty Macro trick if the output would be an "I" but both I's were pressed to send ULFTS  is C P TH M, M FRNLYEIOI | A a | |for "delete last stroke" instead
+   // Check if both I's were pressed and if so change the stroke
+   if (gemini_stroke[0] == 0x80 and gemini_stroke[1] == 0x00 and gemini_stroke[3] == 0x00 and gemini_stroke[4] == 0x00 and gemini_stroke[5] == 0x00 and gemini_stroke[2] == BIT4){
+      if((state.current_stroke[4] & 0x12) == 0x12){
+        // Reset the I
+        gemini_stroke[2] &= !BIT4;
+        // Set to ULFTS
+        gemini_stroke[5] |= BIT2;
+        gemini_stroke[3] |= BIT2;
+        gemini_stroke[4] |= BIT7;
+        gemini_stroke[4] |= BIT5;
+        gemini_stroke[5] |= BIT3;
+      }
+    }
+   */
   
    // Always send all bytes even if empty
    for (int i = 0 ; i < 6; i++){
@@ -480,9 +510,10 @@ void send_stroke(uint8_t* b) {
    }
    // Set the first Bit in the first Gemini Byte to 1 for the next stroke
    gemini_stroke[0] |= B10000000;
-
+   
    state.last_stroke_send = millis();
    state.stroke_sent = true;
+   
 }
 
 
