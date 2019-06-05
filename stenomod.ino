@@ -105,7 +105,7 @@ typedef struct {
 /* ?: 0 BIT8 1BIT8 2BIT1 2BIT3 2BIT4 2BIT5 2BIT8 3BIT8 3BIT5 3BIT4 3BIT3 3BIT1 4BIT8 5BIT8 6BIT8 7BIT8 */
 /* linke special Taste: 2BIT2 output 3BIT6, */
 /* rechte special Taste: 3BIT output 3BIT5 */
-Palantype_Conversion_Matrix conversion[35] = {
+Palantype_Conversion_Matrix conversion[36] = {
    {0, BIT2, 1, BIT7}, // C-
    {1, BIT2, 1, BIT6}, // S- 
    {0, BIT5, 0, BIT4}, // P-
@@ -124,7 +124,7 @@ Palantype_Conversion_Matrix conversion[35] = {
    {6, BIT2, 0, BIT3}, // +-
    {6, BIT2, 2, BIT1}, // +-
    {7, BIT3, 3, BIT1}, // -N
-   {4, BIT3, 3, BIT2}, // -L
+   {4, BIT3, 3, BIT2}, // -L i i
    {5, BIT3, 5, BIT6}, // -C
    {7, BIT4, 3, BIT3}, // -M
    {4, BIT4, 4, BIT7}, // -F
@@ -140,8 +140,9 @@ Palantype_Conversion_Matrix conversion[35] = {
    {5, BIT1, 5, BIT2}, // -U
    {5, BIT2, 4, BIT6}, // -^
    {5, BIT2, 4, BIT1}, // -^
-   {2, BIT2, 3, BIT5}, // *3 for nospace, left extra key 3BIT6
-   {3, BIT2, 3, BIT6}  // *4 for capitalization, right extra key 3BIT5
+   {2, BIT2, 3, BIT5}, // *3 for capitalization, left extra key 3BIT5
+   {3, BIT2, 3, BIT6}, // *4 -e, right extra key 3BIT6
+   {3, BIT5, 5, BIT1}  // -Z -r, second right extra key
   };
 
 // Using Arduino pin numbers
@@ -480,7 +481,7 @@ void send_stroke(uint8_t* b) {
    Serial.print(b[7]);
    Serial.println();*/
    // Convert stroke to Palantype Gemini Protocol
-   for (int i = 0; i < 35; i++){
+   for (int i = 0; i < 36; i++){
     if((b[conversion[i].read_byte] & conversion[i].read_bit)== conversion[i].read_bit){
       gemini_stroke[conversion[i].gemini_byte] = gemini_stroke[conversion[i].gemini_byte] | conversion[i].gemini_bit;
       }
